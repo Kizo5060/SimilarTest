@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="lt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JavaScript praktikos testas</title>
+<style>
+:root{font-family:Inter,system-ui,Arial,sans-serif;color:#fff;background:#111328}
+*{box-sizing:border-box} body{margin:0;min-height:100vh;background:radial-gradient(circle at top,#4732a8,#171831 55%,#0c0d18)}
+.wrap{max-width:980px;margin:auto;padding:32px 18px}.top{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:22px}
+.badge,.score{background:#ffffff18;border:1px solid #ffffff22;padding:10px 15px;border-radius:999px}
+.card{background:#fff;color:#171728;border-radius:22px;padding:26px;box-shadow:0 18px 60px #0005}
+h1{margin:0 0 8px}.sub{opacity:.7;margin:0}.code{white-space:pre-wrap;background:#f4f4f8;border-radius:14px;padding:18px;font:17px Consolas,monospace;margin:20px 0}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:12px}.answer{border:0;border-radius:14px;padding:18px;text-align:left;font-size:16px;font-weight:700;cursor:pointer;color:white;min-height:65px}
+.answer:nth-child(1){background:#d93838}.answer:nth-child(2){background:#167fc4}.answer:nth-child(3){background:#c99800}.answer:nth-child(4){background:#28a745}
+.answer:hover{filter:brightness(1.08);transform:translateY(-1px)}.answer:disabled{cursor:default;opacity:.72}
+.answer.correct{outline:5px solid #20d86b;opacity:1}.answer.wrong{outline:5px solid #ff5a5a;opacity:1}
+.explain{margin-top:16px;padding:14px;background:#eef1ff;border-radius:12px;display:none}.next{display:none;margin-top:16px;border:0;background:#26283f;color:#fff;padding:13px 20px;border-radius:12px;font-weight:700;cursor:pointer}
+.start{text-align:center;padding:35px 10px}.start button,.restart{border:0;background:#6747e8;color:#fff;padding:15px 26px;border-radius:13px;font-size:17px;font-weight:800;cursor:pointer}
+.progress{height:8px;background:#ffffff20;border-radius:10px;overflow:hidden;margin-bottom:18px}.bar{height:100%;background:#8c72ff;width:0}
+.result{text-align:center}.big{font-size:60px;font-weight:900;margin:15px 0}.small{opacity:.7}
+@media(max-width:650px){.answers{grid-template-columns:1fr}.card{padding:18px}.wrap{padding:18px 10px}}
+</style>
+</head>
+<body><div class="wrap">
+<div class="top"><div class="badge">⚡ JS praktika</div><div class="score" id="score">0 / 0</div></div>
+<div class="progress"><div class="bar" id="bar"></div></div>
+<div class="card" id="app"></div>
+</div>
+<script>
+const questions = [
+{q:"Ką išves šis kodas?",code:'console.log("5" + 2);',a:['"52"','NaN','7','"7"'],c:0,e:'Kai su + viena reikšmė yra string, 2 paverčiamas į tekstą.'},
+{q:"Ką išves šis kodas?",code:'let kiekis = 5;\nif (true) {\n  let kiekis = 10;\n}\nconsole.log(kiekis);',a:['10','5','undefined','ReferenceError'],c:1,e:'let turi block scope. Vidinis kiekis egzistuoja tik if bloke.'},
+{q:"Ką išves šis kodas?",code:'let kartai = 0;\ndo {\n  kartai++;\n} while (false);\nconsole.log(kartai);',a:['0','1','false','Ciklas nesibaigs'],c:1,e:'do...while kūnas įvykdomas bent vieną kartą.'},
+{q:"Kuri reikšmė if sąlygoje yra truthy?",code:'if (REIKŠMĖ) { ... }',a:['0','null','""','"0"'],c:3,e:'Net ir tekstas "0" yra ne tuščias string, todėl truthy.'},
+{q:"Ką išves šis kodas?",code:'const suma = (a, b) => a + b;\nconsole.log(suma(3, 4));',a:['"34"','[3,4]','7','undefined'],c:2,e:'Arrow funkcija grąžina 3 + 4 = 7.'},
+{q:"Ką išves šis kodas?",code:'const skaiciai = [1, 2];\nskaiciai.push(3);\nconsole.log(skaiciai.length);',a:['1','2','3','TypeError'],c:2,e:'push prideda 3, todėl masyve yra trys elementai.'},
+{q:"Ką išves map?",code:'const skaiciai = [1, 2, 3];\nconst rezultatas = skaiciai.map(x => x * 2);\nconsole.log(rezultatas);',a:['12','[2]','[1,2,3]','[2,4,6]'],c:3,e:'map sukuria naują masyvą, kiekvieną reikšmę padauginęs iš 2.'},
+{q:"Ką išves reduce?",code:'const skaiciai = [2, 3, 4];\nconst suma = skaiciai.reduce((acc, x) => acc + x, 10);\nconsole.log(suma);',a:['9','10','19','24'],c:2,e:'Pradinė acc reikšmė 10: 10 + 2 + 3 + 4 = 19.'},
+{q:"Ką išves šis kodas?",code:'const tekstas = "  labas  ";\nconsole.log(tekstas.trim().toUpperCase());',a:['"  LABAS  "','"Labas"','"labas"','"LABAS"'],c:3,e:'trim pašalina tarpus kraštuose, toUpperCase paverčia didžiosiomis.'},
+{q:"Ką išves šis kodas?",code:'const tekstas = "A,B,C";\nconsole.log(tekstas.split(",").join("-"));',a:['"A-B-C"','"ABC"','"A,B,C"','["A","B","C"]'],c:0,e:'split padalina pagal kablelį, join sujungia su brūkšneliu.'},
+{q:"Ką išves switch?",code:'let tekstas = "";\nswitch (1) {\n case 1: tekstas += "A";\n case 2: tekstas += "B"; break;\n default: tekstas += "C";\n}\nconsole.log(tekstas);',a:['"A"','"B"','"AB"','"ABC"'],c:2,e:'Po case 1 nėra break, todėl vykdomas ir case 2.'},
+{q:"Ką išves šis kodas?",code:'const a = [1, 2];\nconst b = a;\nconst c = [...a];\nb[0] = 9;\nconsole.log(a[0], c[0]);',a:['1 ir 9','1 ir 1','9 ir 9','9 ir 1'],c:3,e:'b rodo į tą patį masyvą kaip a, o spread sukuria c kopiją.'},
+{q:"Ką išves destructuring?",code:'const preke = { kaina: 10, kiekis: 2 };\nconst kopija = { ...preke, kaina: 15 };\nconst { kaina } = kopija;\nconsole.log(kaina);',a:['15','10','2','undefined'],c:0,e:'Spread nukopijuoja objektą, o vėliau kaina perrašoma į 15.'},
+{q:"Kokiais vienetais Date.now() grąžina laiką?",code:'Date.now()',a:['Dienomis','Sekundėmis','Milisekundėmis','Minutėmis'],c:2,e:'Date.now() yra milisekundės nuo 1970-01-01 UTC.'},
+{q:"Kuris iškvietimas suras elementą pagal id?",code:'<p id="zinute">Labas!</p>',a:['document.querySelector("zinute")','document.getElementById("#zinute")','document.getElementById("zinute")','document.querySelector(".zinute")'],c:2,e:'getElementById gauna patį ID pavadinimą be #.'},
+{q:"Kuris variantas su querySelector suras tą patį id?",code:'<p id="zinute">Labas!</p>',a:['document.querySelector("#zinute")','document.querySelector("zinute")','document.querySelector(".zinute")','document.querySelector("@zinute")'],c:0,e:'querySelector naudoja CSS selektorius, todėl ID žymimas #.'},
+{q:"Kuri eilutė įterps sukurtą pastraipą į konteinerį?",code:'const pastraipa = document.createElement("p");\npastraipa.textContent = "Labas!";',a:['konteineris.createElement(pastraipa)','pastraipa.remove()','konteineris.appendChild(pastraipa)','konteineris.textContent = pastraipa'],c:2,e:'appendChild prideda DOM elementą kaip vaikinį elementą.'},
+{q:"Kaip pakeisti DOM elemento fono spalvą į raudoną?",code:'// elementas jau rastas DOM elementas',a:['elementas.style.backgroundColor = "red"','elementas.backgroundColor = "red"','elementas.style.backgroundColor = (red)','elementas.textContent = "red"'],c:0,e:'CSS savybės per JS keičiamos per element.style.'},
+{q:"Ką nurodo event.target?",code:'button.addEventListener("click", event => { ... });',a:['Elementą, kuriame kilo įvykis','Visada button','Paspausto elemento tekstą','Visada document'],c:0,e:'event.target yra konkretus elementas, nuo kurio kilo įvykis.'},
+{q:"Kuri savybė grąžina kitą gretimą HTML elementą, praleisdama teksto mazgus?",code:'elementas.???',a:['parentNode','nextSibling','firstChild','nextElementSibling'],c:3,e:'nextElementSibling grąžina kitą elementą, o ne bet kokį node.'},
+{q:"Ką išves?",code:'const vardas = "Ieva";\nconsole.log(`Labas, ${vardas}!`);',a:['"Labas, Ieva!"','"Labas, vardas!"','"Ieva"','"Labas, ${vardas}!"'],c:0,e:'Template literal ${vardas} įterpia kintamojo reikšmę.'},
+{q:"Ką išves?",code:'console.log(typeof "123");',a:['number','string','boolean','undefined'],c:1,e:'Kabutėse esanti reikšmė yra string.'},
+{q:"Ką išves?",code:'console.log(5 === "5");',a:['true','false','5','TypeError'],c:1,e:'=== tikrina ir reikšmę, ir tipą. number 5 nėra string "5".'},
+{q:"Ką išves?",code:'const x = [10, 20, 30];\nconsole.log(x[1]);',a:['10','20','30','undefined'],c:1,e:'Masyvų indeksai prasideda nuo 0.'},
+{q:"Ką išves?",code:'let suma = 0;\nfor (let i = 1; i <= 3; i++) suma += i;\nconsole.log(suma);',a:['3','4','6','7'],c:2,e:'1 + 2 + 3 = 6.'},
+{q:"Ką grąžins filter?",code:'const x = [1,2,3,4];\nconsole.log(x.filter(n => n > 2));',a:['[1,2]','[3,4]','[2,3,4]','4'],c:1,e:'filter palieka tik elementus, kuriems sąlyga true.'},
+{q:"Ką išves?",code:'const obj = { vardas: "Jonas" };\nconsole.log(obj.amzius);',a:['0','null','undefined','ReferenceError'],c:2,e:'Neegzistuojanti objekto savybė grąžina undefined.'},
+{q:"Ką padaro pop()?",code:'const a = [1,2,3];\na.pop();\nconsole.log(a);',a:['[1,2]','[2,3]','[1,2,3,undefined]','[]'],c:0,e:'pop pašalina paskutinį masyvo elementą.'},
+{q:"Ką išves?",code:'console.log(Boolean(""));',a:['true','false','""','undefined'],c:1,e:'Tuščias string yra falsy.'},
+{q:"Ką išves?",code:'console.log(2 ** 3);',a:['6','8','9','23'],c:1,e:'** yra kėlimo laipsniu operatorius: 2³ = 8.'},
+{q:"Kuris metodas sukuria naują HTML elementą?",code:'// DOM',a:['document.newElement("div")','document.createElement("div")','document.make("div")','document.append("div")'],c:1,e:'DOM elementai kuriami su document.createElement.'},
+{q:"Ką išves?",code:'const a = "JavaScript";\nconsole.log(a.length);',a:['9','10','11','undefined'],c:1,e:'Žodyje JavaScript yra 10 simbolių.'},
+{q:"Ką išves?",code:'let x = 3;\nx++;\nconsole.log(x);',a:['2','3','4','33'],c:2,e:'x++ padidina x vienetu.'},
+{q:"Ką išves?",code:'const x = {a: 1};\nx.a = 5;\nconsole.log(x.a);',a:['1','5','TypeError','undefined'],c:1,e:'const neleidžia perpriskirti paties objekto, bet jo savybes keisti galima.'},
+{q:"Kuris metodas pašalina tarpus string pradžioje ir pabaigoje?",code:'"  labas  ".???()',a:['split','trim','slice','join'],c:1,e:'trim() pašalina whitespace nuo abiejų kraštų.'},
+{q:"Ką išves?",code:'console.log(null == undefined);',a:['true','false','null','TypeError'],c:0,e:'Naudojant ==, null ir undefined laikomi lygiais. Su === būtų false.'},
+{q:"Ką išves?",code:'const a = [1,2,3];\nconsole.log(a.includes(2));',a:['true','false','2','1'],c:0,e:'includes patikrina, ar masyve yra nurodyta reikšmė.'},
+{q:"Kuris variantas teisingai prideda click įvykį?",code:'const btn = document.querySelector("button");',a:['btn.on("click")','btn.addEventListener("click", () => {})','btn.event("click")','document.click(btn)'],c:1,e:'Standartinis būdas yra addEventListener.'},
+{q:"Ką išves?",code:'const [a, b] = [5, 8];\nconsole.log(b);',a:['5','8','[5,8]','undefined'],c:1,e:'Array destructuring: a=5, b=8.'}
+];
+
+let order=[], pos=0, points=0, locked=false;
+const app=document.getElementById("app"), score=document.getElementById("score"), bar=document.getElementById("bar");
+function shuffle(a){return [...a].sort(()=>Math.random()-.5)}
+function start(){order=shuffle(questions);pos=0;points=0;score.textContent=`0 / ${order.length}`;render()}
+function render(){
+ locked=false; const x=order[pos]; bar.style.width=`${(pos/order.length)*100}%`;
+ app.innerHTML=`<div><div class="small">Klausimas ${pos+1} iš ${order.length}</div><h1>${x.q}</h1><div class="code">${x.code}</div><div class="answers">${x.a.map((v,i)=>`<button class="answer" data-i="${i}">${v}</button>`).join("")}</div><div class="explain" id="explain"></div><button class="next" id="next">${pos===order.length-1?"Rezultatas":"Kitas klausimas →"}</button></div>`;
+ document.querySelectorAll(".answer").forEach(b=>b.onclick=()=>choose(+b.dataset.i));
+ document.getElementById("next").onclick=next;
+}
+function choose(i){
+ if(locked)return;locked=true;const x=order[pos],bs=[...document.querySelectorAll(".answer")];
+ bs.forEach(b=>b.disabled=true);bs[x.c].classList.add("correct");if(i!==x.c)bs[i].classList.add("wrong");else points++;
+ score.textContent=`${points} / ${order.length}`;
+ const ex=document.getElementById("explain");ex.style.display="block";ex.innerHTML=`<b>${i===x.c?"✅ Teisingai!":"❌ Neteisingai."}</b> ${x.e}`;
+ document.getElementById("next").style.display="inline-block";
+}
+function next(){pos++;if(pos<order.length)render();else finish()}
+function finish(){
+ bar.style.width="100%"; const pct=Math.round(points/order.length*100);
+ app.innerHTML=`<div class="result"><div class="small">Testas baigtas</div><div class="big">${points}/${order.length}</div><h1>${pct}%</h1><p>${pct>=80?"Labai gerai 👌":pct>=60?"Neblogai — dar šiek tiek praktikos.":"Pakartok temas ir paleisk testą dar kartą."}</p><button class="restart" onclick="start()">🔄 Bandyti dar kartą</button></div>`;
+}
+app.innerHTML=`<div class="start"><h1>JavaScript praktikos testas</h1><p>39 klausimai panašiu stiliumi kaip tavo Kahoot. Klausimai kiekvieną kartą sumaišomi.</p><button onclick="start()">Pradėti testą</button></div>`;
+</script></body></html>
